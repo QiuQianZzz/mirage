@@ -39,6 +39,9 @@ tool/node_modules/
 # 子集字体为构建产物，由 build.ps1 自动生成
 assets/fonts/
 
+# CI 下载的源字体缓存（不进仓库）
+tool/.fonts/
+
 # Symbolication related
 app.*.symbols
 

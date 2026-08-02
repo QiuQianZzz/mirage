@@ -27,21 +27,28 @@ import subsetFont from 'subset-font';
 
 const ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const OUT_FONT = path.join(ROOT, 'assets', 'fonts', 'NotoSansSC-Subset.ttf');
-const DEFAULT_SRC = path.join(tmpdir(), 'mirage-fonts', 'NotoSansSC.ttf');
+// 源字体缓存到固定目录（而非系统临时目录），便于 GitHub Actions 缓存复用。
+const DEFAULT_SRC = path.join(ROOT, 'tool', '.fonts', 'NotoSansSC.ttf');
 const FONT_SOURCES = [
+  'https://raw.githubusercontent.com/google/fonts/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf',
   'https://github.com/google/fonts/raw/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf',
   'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf',
   'https://fastly.jsdelivr.net/gh/google/fonts@main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf',
 ];
 
 async function downloadFont(dest) {
+  if (process.env.NOTO_SANS_SC) {
+    console.warn('(!) 已设置 NOTO_SANS_SC，跳过自动下载。');
+    throw new Error(`NOTO_SANS_SC 指向的字体不可用：${process.env.NOTO_SANS_SC}`);
+  }
   for (let attempt = 1; attempt <= 3; attempt++) {
     for (const url of FONT_SOURCES) {
       try {
-        const resp = await fetch(url, { signal: AbortSignal.timeout(120_000) });
+        const resp = await fetch(url, { signal: AbortSignal.timeout(300_000) });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const buf = Buffer.from(await resp.arrayBuffer());
         if (buf.length < 1_000_000) throw new Error(`文件过小 ${buf.length}B`);
+        await fs.mkdir(path.dirname(dest), { recursive: true });
         await fs.writeFile(dest, buf);
         console.log(`下载完成：${dest}（来自 ${url}）`);
         return;
@@ -50,8 +57,8 @@ async function downloadFont(dest) {
       }
     }
     if (attempt < 3) {
-      console.warn(`第 ${attempt} 轮下载失败，2 秒后重试…`);
-      await new Promise((r) => setTimeout(r, 2000));
+      console.warn(`第 ${attempt} 轮下载失败，5 秒后重试…`);
+      await new Promise((r) => setTimeout(r, 5000));
     }
   }
   throw new Error('多次尝试后仍无法下载源字体，可手动下载后通过 --font= 指定路径。');
