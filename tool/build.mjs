@@ -24,7 +24,7 @@ const contentOpts = parseContentArgs(args);
 
 function run(cmd) {
   console.log(`\n> ${cmd}`);
-  execSync(cmd, { shell: 'cmd.exe', stdio: 'inherit', cwd: process.cwd() });
+  execSync(cmd, { stdio: 'inherit', cwd: process.cwd() });
 }
 
 try {
