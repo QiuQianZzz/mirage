@@ -38,7 +38,7 @@ try {
     console.log('\n[subset_font] 跳过字体子集化（--no-subset），复用已提交子集。');
   }
 
-  const buildFlags = noCdn ? '--no-web-resources-cdn' : '';
+  const buildFlags = `${noCdn ? '--no-web-resources-cdn' : ''} --wasm`;
   run(`flutter build web --release ${buildFlags}`);
 
   // 构建后替换 build/web/ 中的占位符（不修改源文件）
