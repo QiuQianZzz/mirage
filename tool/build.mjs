@@ -68,6 +68,6 @@ try {
     run('node tool/preview.mjs');
   }
 } catch (e) {
-  console.error('\n❌ 构建失败');
+  console.error(`\n❌ 构建失败：${e && e.message ? e.message : e}`);
   process.exit(1);
 }
