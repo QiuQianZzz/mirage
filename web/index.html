@@ -260,7 +260,23 @@
     };
     // 兜底：任何情况下 20 秒后移除启动画面，避免卡死在加载页。
     setTimeout(window.hideSplash, 20000);
+    // 微信 X5 内核不支持现代 JS，提示用系统浏览器打开
+    (function () {
+      var ua = navigator.userAgent || '';
+      if (/MicroMessenger/i.test(ua)) {
+        var phase = document.getElementById('boot-phase');
+        if (phase) phase.textContent = '请在浏览器中打开此页面';
+        var pct = document.getElementById('boot-percent');
+        if (pct) pct.textContent = '';
+        var fill = document.getElementById('boot-fill');
+        if (fill) { fill.style.width = '100%'; fill.classList.add('done'); }
+        return;
+      }
+      var s = document.createElement('script');
+      s.src = 'flutter_bootstrap.js';
+      s.defer = true;
+      document.body.appendChild(s);
+    })();
   </script>
-  <script src="flutter_bootstrap.js" defer></script>
 </body>
 </html>
