@@ -52,3 +52,5 @@ app.*.map.json
 
 # Flutter Web 无法打包 git 子模块目录，内容由 tool/sync-content.mjs 物化到此目录
 assets/content_effective/
+.vercel
+.env*
