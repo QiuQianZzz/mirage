@@ -1,0 +1,22 @@
+site:
+  title: QiuQianZzz
+  site_name: Mirage
+  author: QiuQianZzz
+  role: Flutter / Web 开发者
+  tagline: 用代码创造海市蜃楼
+  description: 一个基于 Flutter 与 Material Design 3 构建的静态个人站点
+  avatar: assets/content/avatar.png
+  email: yanghanjie2005@qq.com
+  site_url: https://mirage.example.com
+  social:
+    - name: GitHub
+      url: https://github.com/QiuQianZzz
+      icon: assets/icons/github.svg
+    - name: Bilibili
+      url: https://space.bilibili.com/3546815089609535
+      icon: assets/icons/bilibili.svg
+
+  bio:
+    - 欢迎来到 Mirage —— 一个基于 Flutter 与 Material Design 3 构建的静态站点。
+    - 在这里可以浏览我的博客文章、随记随笔、做过的项目，以及记录生活的影像。
+    - 所有内容通过 Markdown 管理，页面以 Web 构建，兼顾优雅与极简。

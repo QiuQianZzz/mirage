@@ -33,6 +33,12 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Node (字体子集化工具)
+tool/node_modules/
+
+# 子集字体为构建产物，由 build.ps1 自动生成
+assets/fonts/
+
 # Symbolication related
 app.*.symbols
 
@@ -43,3 +49,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Flutter Web 无法打包 git 子模块目录，内容由 tool/sync-content.mjs 物化到此目录
+assets/content_effective/

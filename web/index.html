@@ -2,45 +2,261 @@
 <html>
 <head>
   <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
+    base href 会被 flutter build 的 --base-href 参数替换。
   -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
-
-  <!-- iOS meta tags & icons -->
+  <meta name="description" content="Mirage - 基于 Flutter 与 Material Design 3 的个人站点">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="mirage">
+  <meta name="apple-mobile-web-app-title" content="{{site_title}}">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>mirage</title>
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml">
+  <title>{{site_title}}</title>
   <link rel="manifest" href="manifest.json">
+  <link rel="preload" as="script" href="main.dart.js">
+
+  <script>
+    // 在首帧渲染前同步读取持久化主题，避免浅色启动页切换到深色应用。
+    // 键名与 Dart 侧 theme_store_web.dart 的 kThemeStorageKey 保持一致。
+    (function () {
+      var theme = null;
+      try { theme = localStorage.getItem('mirage.theme'); } catch (e) {}
+      var dark = theme === 'dark' ? true
+        : theme === 'light' ? false
+        : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+    })();
+  </script>
+
+  <style>
+    :root {
+      --brand: #006a6a;
+      --brand-soft: #0fb8ad;
+      --ink: #1f3b39;
+      --muted: #7a8a88;
+      --track: #e3f0ed;
+      --bg: #fafdfc;
+      --boot-glow: #f4fbf9;
+      --grid-line: rgba(0, 106, 106, 0.04);
+    }
+    /* 深色主题的启动页配色（与持久化/系统主题一致） */
+    html[data-theme="dark"] {
+      --brand: #3bd6cb;
+      --brand-soft: #0fb8ad;
+      --ink: #c9dfdc;
+      --muted: #8ba7a3;
+      --track: #1e2b29;
+      --bg: #0f1616;
+      --boot-glow: #152020;
+      --grid-line: rgba(61, 214, 203, 0.06);
+    }
+
+    * { box-sizing: border-box; }
+
+    /* 启动画面：在 Flutter 首帧渲染前展示，避免白屏/闪烁 */
+    #boot {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(120% 90% at 50% 0%, var(--boot-glow) 0%, var(--bg) 58%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+        "Microsoft YaHei", sans-serif;
+      transition: opacity 0.4s ease;
+      overflow: hidden;
+    }
+    /* 极淡的栅格底纹，呼应站内动态背景 */
+    #boot::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+      background-size: 42px 42px;
+      -webkit-mask-image: radial-gradient(72% 62% at 50% 40%, #000 0%, transparent 100%);
+      mask-image: radial-gradient(72% 62% at 50% 40%, #000 0%, transparent 100%);
+    }
+
+    #boot .stage {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: min(360px, 86vw);
+      text-align: center;
+    }
+
+    /* 品牌 logo：M 描线 + 朝阳弹入（与 App 内 AnimatedMirageLogo 同风格） */
+    #boot .mark {
+      width: 66px;
+      height: 66px;
+      margin-bottom: 20px;
+    }
+    #boot .mark svg { display: block; width: 100%; height: 100%; overflow: visible; }
+    #boot .mark .m-path {
+      fill: none;
+      stroke: var(--brand);
+      stroke-width: 2.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 44;
+      stroke-dashoffset: 44;
+      animation: boot-draw 0.95s cubic-bezier(0.65, 0, 0.35, 1) 0.1s forwards;
+    }
+    #boot .mark .sun {
+      fill: var(--brand);
+      opacity: 0;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: boot-sun 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.9s forwards;
+    }
+    @keyframes boot-draw { to { stroke-dashoffset: 0; } }
+    @keyframes boot-sun {
+      from { opacity: 0; transform: scale(0); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    #boot .wordmark {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 6px;
+      color: var(--brand);
+      opacity: 0;
+      animation: boot-fade-up 0.6s ease 0.35s forwards;
+    }
+    @keyframes boot-fade-up {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    /* 进度条 */
+    #boot .progress {
+      width: 100%;
+      margin-top: 36px;
+    }
+    #boot .bar {
+      position: relative;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--track);
+      overflow: hidden;
+    }
+    #boot .fill {
+      position: absolute;
+      top: 0; bottom: 0; left: 0;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--brand), var(--brand-soft));
+      transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    /* 进度未满时的高光扫过，让等待过程不呆板 */
+    #boot .fill::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+      transform: translateX(-100%);
+      animation: boot-shine 1.7s ease-in-out infinite;
+    }
+    #boot .fill.done { transition: none; }
+    #boot .fill.done::after { animation: none; }
+    @keyframes boot-shine {
+      0% { transform: translateX(-100%); }
+      55%, 100% { transform: translateX(100%); }
+    }
+
+    #boot .meta {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    #boot .phase {
+      color: var(--ink);
+      text-align: left;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #boot .percent {
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+
+    #boot.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* 尊重系统「减弱动态效果」 */
+    @media (prefers-reduced-motion: reduce) {
+      #boot .m-path, #boot .sun, #boot .wordmark {
+        animation: none;
+        opacity: 1;
+        stroke-dashoffset: 0;
+        transform: none;
+      }
+      #boot .fill::after { animation: none; }
+    }
+  </style>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <div id="boot">
+    <div class="stage">
+      <div class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path class="m-path" d="M3 19 L8.5 5.5 L12 12 L15.5 5.5 L21 19"/>
+          <circle class="sun" cx="18.2" cy="4.8" r="2.0"/>
+        </svg>
+      </div>
+      <div class="wordmark">MIRAGE</div>
+      <div class="progress">
+        <div class="bar"><div id="boot-fill" class="fill"></div></div>
+        <div class="meta">
+          <span id="boot-phase" class="phase">正在初始化…</span>
+          <span id="boot-percent" class="percent">0%</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
-  <script src="flutter_bootstrap.js" async></script>
+  <script>
+    // 供 flutter_bootstrap.js 更新进度条与阶段提示（也供兜底逻辑调用）。
+    window.setBootProgress = function (progress, phase) {
+      var p = Math.round(Math.min(100, Math.max(0, progress)));
+      var fill = document.getElementById('boot-fill');
+      if (fill) {
+        if (p >= 100) fill.classList.add('done');
+        fill.style.width = p + '%';
+      }
+      if (phase) {
+        var el = document.getElementById('boot-phase');
+        if (el) el.textContent = phase;
+      }
+      var pct = document.getElementById('boot-percent');
+      if (pct) pct.textContent = p + '%';
+    };
+    // 供 flutter_bootstrap.js 在引擎渲染首帧后调用，淡出启动画面。
+    window.hideSplash = function () {
+      var el = document.getElementById('boot');
+      if (!el || el.classList.contains('fade-out')) return;
+      el.classList.add('fade-out');
+      setTimeout(function () { el.remove(); }, 400);
+    };
+    // 兜底：任何情况下 20 秒后移除启动画面，避免卡死在加载页。
+    setTimeout(window.hideSplash, 20000);
+  </script>
+  <script src="flutter_bootstrap.js" defer></script>
 </body>
 </html>

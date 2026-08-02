@@ -1,0 +1,54 @@
+name: Build & Deploy to Vercel
+
+on:
+  push:
+    branches: [main, init-dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          # 内容来自 git 子模块 assets/content_override
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: tool/package-lock.json
+
+      - name: Install tool dependencies
+        working-directory: tool
+        run: npm ci
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Restore Dart packages
+        run: flutter pub get
+
+      - name: Build site
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: node tool/build.mjs
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: build/web
+          github-comment: false

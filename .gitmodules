@@ -1,0 +1,3 @@
+[submodule "assets/content_override"]
+	path = assets/content_override
+	url = https://github.com/QiuQianZzz/mirage-content.git
