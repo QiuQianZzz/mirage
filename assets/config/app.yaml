@@ -2,6 +2,6 @@
 # 站点信息本身（site_name / bio / avatar / social / 菜单文案等）属于内容，
 # 存放在内容区（local_path 或 submodule_path 对应目录）里的 site.yaml。
 content:
-  source: submodule            # local（本地模板）| submodule（git 子模块仓库）
+  source: local                 # 默认本地模板；CI 用 --source submodule 强制子模块
   local_path: content
   submodule_path: content_override

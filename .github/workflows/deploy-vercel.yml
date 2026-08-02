@@ -41,7 +41,7 @@ jobs:
       - name: Build site
         env:
           SITE_URL: ${{ vars.SITE_URL }}
-        run: node tool/build.mjs
+        run: node tool/build.mjs --source submodule --no-cdn
 
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v25
