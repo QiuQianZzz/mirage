@@ -7,28 +7,33 @@
  * 大幅缩小包体（完整字体 ~17MB → 通常几十到几百 KB）。
  *
  * 用法：
- *   node tool/subset_font.mjs
- *   node tool/subset_font.mjs --font=path/to/NotoSansSC.ttf   # 指定源字体
+ *   node tool/subset_font.mjs                    # 从提交的"够用字库"离线生成子集（每构建一次）
+ *   node tool/subset_font.mjs --font=path/Noto.ttf   # 指定源字体覆盖
+ *
+ * 每次构建都会重新生成子集：扫描站点实际使用字符，从 tool/fonts/NotoSansSC-Common.ttf
+ * （提交进仓库的够用字库，覆盖 GB2312 一二级 6763 字）中取出字形，
+ * 输出到 assets/fonts/NotoSansSC-Subset.ttf（构建产物，不入库）。
+ * 因此平时改文章/配置后重新构建，不会产生新的字体提交、不增长仓库体积。
+ *
+ * 生成够用字库（仅需一次，需要完整源字体 ~17MB，你可手动下载或临时联网）：
+ *   node tool/make_common_font.mjs [--source=NotoSansSC.ttf] [--out=tool/fonts/NotoSansSC-Common.ttf]
  *
  * 源字体查找顺序：
  *   1. --font= 参数
  *   2. 环境变量 NOTO_SANS_SC
- *   3. 系统临时目录（缺失时自动从 GitHub 下载完整版 ~17MB）
- *
- * 输出到 assets/fonts/NotoSansSC-Subset.ttf。
- *
- * 注意：编辑文章/配置/代码新增字符后，需重新运行本脚本再构建站点。
+ *   3. tool/fonts/NotoSansSC-Common.ttf（够用字库，默认来源）
+ *   4. tool/.fonts/NotoSansSC.ttf（完整源，gitignored）
  */
 import { promises as fs } from 'node:fs';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import subsetFont from 'subset-font';
 
 const ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const OUT_FONT = path.join(ROOT, 'assets', 'fonts', 'NotoSansSC-Subset.ttf');
-// 源字体缓存到固定目录（而非系统临时目录），便于 GitHub Actions 缓存复用。
-const DEFAULT_SRC = path.join(ROOT, 'tool', '.fonts', 'NotoSansSC.ttf');
+// 提交进仓库的"够用字库"（覆盖 CJK 基本区），离线子集化的来源；由 tool/make_common_font.mjs 生成。
+const COMMON_SRC = path.join(ROOT, 'tool', 'fonts', 'NotoSansSC-Common.ttf');
+// 仅用于重新生成够用字库时的完整源字体（gitignored，不进仓库）
+const FULL_SRC = path.join(ROOT, 'tool', '.fonts', 'NotoSansSC.ttf');
 const FONT_SOURCES = [
   'https://raw.githubusercontent.com/google/fonts/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf',
   'https://github.com/google/fonts/raw/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf',
@@ -87,7 +92,8 @@ async function resolveSourceFont() {
   const candidates = [
     arg && arg.slice('--font='.length),
     process.env.NOTO_SANS_SC,
-    DEFAULT_SRC,
+    COMMON_SRC,
+    FULL_SRC,
   ].filter(Boolean);
 
   for (const file of candidates) {
@@ -100,7 +106,7 @@ async function resolveSourceFont() {
     }
   }
 
-  // 全部缺失：自动下载完整版。
+  // 全部缺失：自动下载完整版（罕见，仅当 tool/fonts 未生成时）。
   console.log('未找到源字体，正在下载完整版 Noto Sans SC（约 17MB）…');
   const dest = candidates[candidates.length - 1];
   await fs.mkdir(path.dirname(dest), { recursive: true });
@@ -150,6 +156,8 @@ async function walk(dir, onFile) {
 }
 
 async function main() {
+  const { default: subsetFont } = await import('subset-font');
+
   const srcFont = await resolveSourceFont();
   const chars = await collectSourceText();
   const text = Array.from(chars)

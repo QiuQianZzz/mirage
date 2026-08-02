@@ -9,6 +9,7 @@
  *   node tool/build.mjs --source local       # 覆盖内容源为 local
  *   node tool/build.mjs --content <dir>      # 直接用指定内容目录
  *   node tool/build.mjs --no-feed            # 跳过 feed.xml 生成
+ *   node tool/build.mjs --no-subset          # 跳过字体子集化（CI 复用已提交子集）
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
@@ -18,6 +19,7 @@ const args = process.argv.slice(2);
 const preview = args.includes('--preview');
 const noCdn = args.includes('--no-cdn');
 const skipFeed = args.includes('--no-feed');
+const skipSubset = args.includes('--no-subset');
 const contentOpts = parseContentArgs(args);
 
 function run(cmd) {
@@ -30,7 +32,11 @@ try {
   console.log(`[sync-content] ${syncContent(contentOpts)}`);
   const dir = resolveContentDir(contentOpts);
 
-  run('node tool/subset_font.mjs');
+  if (!skipSubset) {
+    run('node tool/subset_font.mjs');
+  } else {
+    console.log('\n[subset_font] 跳过字体子集化（--no-subset），复用已提交子集。');
+  }
 
   const buildFlags = noCdn ? '--no-web-resources-cdn' : '';
   run(`flutter build web --release ${buildFlags}`);
